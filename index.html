@@ -130,11 +130,14 @@ details.adv textarea{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,m
   <article id="doc" class="doc" aria-live="polite"><div class="empty noprint">The generated document will appear here.</div></article>
  </section>
 </main>
-<footer class="foot noprint">Developed by <b>Edwin Pelonio</b>, TESDA Quezon City / TESD Specialist II</footer>
+<footer class="foot noprint">Developed by <b>Edwin Pelonio</b>, TESDA Quezon City / TESD Specialist II<br><span id="ver"></span></footer>
 <div class="toolbar-m noprint"><button class="btn-x primary" type="button" data-act="dw" disabled>Download Word</button><button class="btn-x" type="button" data-act="pr" disabled>Print / PDF</button></div>
 <script>
 
+// edit these two lines for each release
+const VERSION='1.1.0',BUILD='20261126.1';
 const $=id=>document.getElementById(id);
+$('ver').textContent='Version '+VERSION+' · Build '+BUILD;
 // the TR carries a "DRAFT" watermark that leaks into the text (sometimes with a letter stuck inside it)
 const wm=s=>s.replace(/D([a-z0-9]?)R([a-z0-9]?)A([a-z0-9]?)F([a-z0-9]?)T/g,'$1$2$3$4');
 const cl=s=>wm(s).replace(/\s+/g,' ').trim();
