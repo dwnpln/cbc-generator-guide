@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>CBC Generator</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f5c4d'/%3E%3Cpath d='M18 14h20l8 8v28H18z' fill='%23fff'/%3E%3Cpath d='M38 14v8h8' fill='%23bfe3da'/%3E%3Cpath d='M24 31h16M24 37h16M24 43h10' stroke='%230f5c4d' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{--brand:#0f5c4d;--brand-ink:#fff;--accent:#0f5c4d;--bg:#eef1ee;--card:#fff;--ink:#17231f;--mut:#5f6e68;--line:#dbe2dd;--soft:#f4f7f5;--warn:#9a5b00;--warn-bg:#fff4dc;--err:#a3271c;--err-bg:#fdeceb;--r:12px}
+[data-bs-theme=dark]{--brand:#0b3f35;--accent:#5fd0b4;--bg:#0f1714;--card:#17211d;--ink:#e5eeea;--mut:#9bada5;--line:#26352f;--soft:#1d2924;--warn:#f1c067;--warn-bg:#2f2614;--err:#ff9d93;--err-bg:#33201e}
+*{-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:76px}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+.wrap{max-width:none;margin:0;padding:0 20px}
+.bar{position:sticky;top:0;z-index:20;background:var(--brand);color:var(--brand-ink);padding-top:env(safe-area-inset-top)}
+.bar .wrap{display:flex;align-items:center;gap:12px;min-height:60px}
+.mark{flex:none;width:38px;height:38px;border-radius:9px;background:rgba(255,255,255,.14);display:grid;place-items:center;font-weight:700;letter-spacing:.02em;font-size:14px}
+.bar h1{font-size:1.05rem;font-weight:650;margin:0;line-height:1.2}
+.bar p{margin:0;font-size:.8rem;opacity:.8;line-height:1.25}
+.bar .grow{flex:1;min-width:0}
+.ico{flex:none;width:40px;height:40px;border:0;border-radius:10px;background:rgba(255,255,255,.12);color:inherit;display:grid;place-items:center;font-size:18px;cursor:pointer}
+.ico:hover{background:rgba(255,255,255,.22)}
+.layout{display:grid;grid-template-columns:340px minmax(0,1fr);align-items:start}
+.side{background:var(--card);border-right:1px solid var(--line);padding:18px;min-width:0}
+.side .panel{border:0;background:transparent;border-radius:0;padding:0 0 20px;margin:0}
+.side .panel+.panel{border-top:1px solid var(--line);padding:20px 0 0}
+.side .panel:last-child{padding-bottom:0}
+.right{min-width:0;padding:0 28px 40px;background:var(--bg)}
+@media (min-width:981px){html,body{height:100%}body{display:flex;flex-direction:column;overflow:hidden}.bar{flex:none}.layout{flex:1;min-height:0;align-items:stretch}.side,.right{height:100%;overflow-y:auto;overscroll-behavior:contain}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.side .panel:last-child{margin-bottom:0}
+.panel h2{font-size:1.05rem;font-weight:650;margin:0 0 4px}
+.panel .hint{color:var(--mut);margin:0 0 14px;font-size:.9rem}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;border:2px dashed var(--line);background:var(--soft);border-radius:var(--r);padding:22px 16px;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.drag,.drop:focus-within{border-color:var(--accent)}
+.drop.drag{background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+.drop b{font-size:1rem}.drop span{color:var(--mut);font-size:.88rem}
+.drop .file{margin-top:6px;font-weight:600;color:var(--accent);word-break:break-all}
+.drop svg{width:34px;height:34px;color:var(--accent)}
+.msg{margin-top:12px;padding:10px 12px;border-radius:9px;font-size:.9rem;display:none}
+.msg.show{display:block}.msg.err{background:var(--err-bg);color:var(--err)}.msg.info{background:var(--soft);color:var(--mut)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.tile{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-width:0}
+.tile.wide{grid-column:1/-1}
+.tile small{display:block;color:var(--mut);font-size:.78rem}
+.tile b{display:block;font-weight:650;overflow-wrap:anywhere;line-height:1.3}
+.tile .sub{font-weight:400;color:var(--mut);font-size:.82rem}
+details.adv{margin-top:14px}
+details.adv summary{cursor:pointer;color:var(--mut);font-size:.9rem;padding:6px 0}
+details.adv textarea{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--soft);color:var(--ink);border-color:var(--line)}
+.parts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pt{appearance:none;text-align:left;border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:10px;padding:10px 12px;min-height:58px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:border-color .12s,background .12s}
+.pt b{font-size:.95rem}.pt span{font-size:.8rem;color:var(--mut);line-height:1.25}
+.pt:hover:not(:disabled){border-color:var(--accent)}
+.pt.on{background:var(--accent);border-color:var(--accent);color:var(--brand-ink)}
+[data-bs-theme=dark] .pt.on{color:#06231c}
+.pt.on span{color:inherit;opacity:.85}
+.pt:disabled{opacity:.45;cursor:not-allowed}
+.pt.all{grid-column:1/-1;flex-direction:row;align-items:center;gap:10px;min-height:48px}
+.btn-x{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:10px 16px;font-weight:600;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-x.primary{background:var(--accent);border-color:var(--accent);color:var(--brand-ink)}
+[data-bs-theme=dark] .btn-x.primary{color:#06231c}
+.btn-x:disabled{opacity:.45;cursor:not-allowed}
+.tools{display:flex;gap:10px;align-items:center;position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 0 12px;margin-bottom:6px;flex-wrap:wrap}
+.tools .ttl{margin-right:auto;font-weight:650;font-size:1.05rem}
+.empty{color:var(--mut);text-align:center;padding:60px 12px;font-family:system-ui,sans-serif}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.doc{--bs-body-color:#000;--bs-table-color:#000;--bs-table-bg:transparent;--bs-table-border-color:#000;background:#fff;color:#000;max-width:8.5in;margin:0 auto;padding:.7in;border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 24px #0002;font:11pt/1.4 'Times New Roman',serif;min-height:9in;scroll-margin-top:76px}
+.doc table{width:100%;margin-bottom:12px}.doc th{background:#e9ecef;vertical-align:middle}.doc td,.doc th{border:1px solid #000!important;padding:5px 8px;overflow-wrap:anywhere}
+.doc ul,.doc ol{margin:0;padding-left:20px}.doc h4,.doc h5{font-weight:bold}.doc h4{font-size:1.3rem}.doc h5{font-size:1.05rem}.doc .c{text-align:center}
+.doc .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:12px}.doc .tw table{margin-bottom:0}.doc .tw.wide table{min-width:560px}
+.pb{margin-top:28px;padding-top:18px;border-top:2px dashed #999}
+.toolbar-m{display:none}
+@media (max-width:980px){
+ .layout{grid-template-columns:minmax(0,1fr)}
+ .side{border-right:0;border-bottom:1px solid var(--line)}
+ .right{padding:0 16px 28px}
+ .tiles{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+ .parts{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:640px){
+ .wrap{padding:0 12px}.layout{padding-bottom:84px}.side{padding:14px 12px}.right{padding:0 12px 24px}
+ .bar p{display:none}
+ .doc{padding:16px 14px;font-size:10pt;border-radius:4px;box-shadow:none}
+ .doc h4{font-size:1.1rem}.doc h5{font-size:1rem}
+ .tools{display:none}
+ .toolbar-m{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
+ .toolbar-m .btn-x{flex:1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{html,body{height:auto!important;overflow:visible!important;display:block!important}.right{height:auto!important;overflow:visible!important;padding:0!important}body{background:#fff}.noprint,.bar,.toolbar-m,.side{display:none!important}main{padding:0}.wrap{max-width:none;padding:0}.layout{display:block}
+ .doc{box-shadow:none;border:0;padding:0;margin:0;border-radius:0;min-height:0}.doc .tw{overflow:visible}.doc .tw.wide table{min-width:0}.pb{page-break-before:always;border:0;margin:0;padding:0}}
+</style></head><body>
+<header class="bar noprint"><div class="wrap">
+ <div class="mark" aria-hidden="true">CBC</div>
+ <div class="grow"><h1>CBC Generator</h1><p>Build a Competency-Based Curriculum from a Training Regulation</p></div>
+ <button class="ico" id="theme" type="button" aria-label="Switch light or dark theme" title="Switch theme">◐</button>
+</div></header>
+<main class="layout">
+ <aside class="side noprint">
+  <section class="panel" aria-labelledby="h1">
+   <h2 id="h1">1. Upload the Training Regulation</h2>
+   <p class="hint">Choose the TR as a Word file (.docx). It is read in your browser and nothing is uploaded anywhere.</p>
+   <label class="drop" id="drop" for="f">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+    <b>Choose a .docx file</b><span>or drag and drop it here</span><div class="file" id="fname"></div>
+   </label>
+   <input type="file" id="f" accept=".docx" class="visually-hidden">
+   <div id="msg" class="msg" role="status" aria-live="polite"></div>
+   <div id="st" class="tiles"></div>
+   <details class="adv"><summary>Edit parsed data (JSON)</summary><textarea id="j" rows="10" class="form-control mt-2" spellcheck="false"></textarea><p class="hint mt-2 mb-0">Fix anything the reader got wrong, then generate a part again. Your edits are used as is.</p></details>
+  </section>
+  <section class="panel" aria-labelledby="h2">
+   <h2 id="h2">2. Generate a part</h2>
+   <p class="hint" id="hint2">Upload a TR first to enable the buttons.</p>
+   <div class="parts" id="b"></div>
+  </section>
+ </aside>
+ <section class="right" id="right">
+  <div class="tools noprint"><div class="ttl" id="ttl">Preview</div><button class="btn-x primary" type="button" data-act="dw" disabled>Download Word (.doc)</button><button class="btn-x" type="button" data-act="pr" disabled>Print or save as PDF</button></div>
+  <article id="doc" class="doc" aria-live="polite"><div class="empty noprint">The generated document will appear here.</div></article>
+ </section>
+</main>
+<div class="toolbar-m noprint"><button class="btn-x primary" type="button" data-act="dw" disabled>Download Word</button><button class="btn-x" type="button" data-act="pr" disabled>Print / PDF</button></div>
+<script>
+
+const $=id=>document.getElementById(id);
+// the TR carries a "DRAFT" watermark that leaks into the text (sometimes with a letter stuck inside it)
+const wm=s=>s.replace(/D([a-z0-9]?)R([a-z0-9]?)A([a-z0-9]?)F([a-z0-9]?)T/g,'$1$2$3$4');
+const cl=s=>wm(s).replace(/\s+/g,' ').trim();
+const fixCat=t=>t.replace(/\b([A-Z]{4,}) (ENT|ENTS|ING|TION|MENT)\b/g,'$1$2');
+const strip=s=>s.replace(/^\s*(\d+(\.\d+)*[.)]|\d+(\.\d+)+)\s+/,'');
+const nm=s=>(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const T=c=>(c||[]).map(l=>l.s).join(' '),F=c=>c&&c[0]?c[0].s:'';
+const add=(a,c)=>{for(const l of c||[])if(!a.some(x=>x.s==l.s&&x.d==l.d))a.push(l)};
+let D=null;
+
+function lines(el){const o=[];(function w(n,d){for(const c of n.children){const t=c.tagName;
+ if(t=='UL'||t=='OL')w(c,d+1);
+ else if(t=='LI'){const s=cl([...c.childNodes].filter(x=>!/^[UO]L$/.test(x.tagName||'')).map(x=>x.textContent).join(' '));
+  if(s)o.push({d:Math.max(d-1,0),s:strip(s)});
+  for(const x of c.children)if(/^[UO]L$/.test(x.tagName))w({children:[x]},d);}
+ else{const s=cl(c.textContent);if(s)o.push({d:0,s:strip(s)});}}})(el,0);
+ if(!o.length&&cl(el.textContent||''))o.push({d:0,s:strip(cl(el.textContent))});return o;}
+
+function rowsOf(html){const doc=new DOMParser().parseFromString(html,'text/html'),R=[];
+ for(const n of doc.body.children){
+  if(n.tagName=='TABLE'){R.push(null);const carry=[];
+   for(const tr of n.rows){const row=[];let ci=0;
+    const put=()=>{while(carry[ci]>0){carry[ci]--;row.push([]);ci++;}};
+    for(const td of tr.cells){put();const cs=td.colSpan||1,rs=td.rowSpan||1;row.push(lines(td));
+     for(let k=0;k<cs;k++){if(k)row.push([]);carry[ci+k]=rs>1?rs-1:0;}ci+=cs;}
+    put();R.push(row);}}
+  else{const w=document.createElement('div');w.appendChild(n.cloneNode(true));const l=lines(w);
+   if(/^[UO]L$/.test(n.tagName))l.forEach(x=>{const r=[[x]];r.p=1;R.push(r)});
+   else if(l.length){const r=[l];r.p=1;R.push(r)}}}
+ return R;}
+
+// unit titles can wrap onto the next paragraph(s) before "UNIT CODE" — join them
+function joinTitles(R){const o=[];
+ for(let i=0;i<R.length;i++){const r=R[i];
+  if(r&&r.p&&/^unit (of competency|title)\b/i.test(F(r[0]))&&!/unit code/i.test(T(r[0]))){
+   let s=cl(T(r[0])),j=i+1;
+   while(j<R.length&&j<i+4&&R[j]&&R[j].p&&!/^unit (code|descriptor)/i.test(F(R[j][0]))&&cl(T(R[j][0]))){s+=' '+cl(T(R[j][0]));j++;}
+   if(j<R.length&&R[j]&&R[j].p&&/^unit code/i.test(F(R[j][0]))){const x=[[{d:0,s:s}]];x.p=1;o.push(x);i=j-1;continue;}}
+  o.push(r);}
+ return o;}
+const noCode=t=>cl(t).replace(/\s*UNIT CODE\s*:?.*$/i,'').replace(/^[:\s]+/,'').trim();
+
+function parse(R){
+ R=joinTitles(R);
+ const D={sector:'',qual:'',desc:'',dur:0,sil:0,chrs:null,entry:[],ucs:[],s3:[],del:[],tools:{intro:[],cats:[],note:[]},fac:{intro:'',head:[],rows:[]},trainer:[],inst:''};
+ let cat='',uc=null,cols=null,c3=null,cur=null,ev='',ent=false,pend='',cu='',s5='',dtxt=null,dn=0,dc=0;
+ const lab=/(critical aspects|underpinning|context of assessment|resource implications|methods? of assessment|assessment method)/i;
+ const lead=/(should be provided|may be assessed through|wishing to gain entry)/i;
+ for(const r of R){
+  if(!r){cols=cur=null;continue;}
+  if(r.p){cols=cur=null;}
+  if(r.p&&r[0][0]){const l0=r[0][0],m0=l0.s.match(/^(basic|common|core)\s+competenc\w*\s+(?=unit\b)/i);
+   if(m0){cat=m0[1].toLowerCase();r[0][0]={d:l0.d,s:l0.s.slice(m0[0].length)};}}
+  const f=F(r[0]),h=r.map(T).map(s=>s.toLowerCase()),all=cl(r.map(T).join(' | '));
+  // "Suggested Nominal Training Duration: 24 Hrs." under each category heading in Section 3
+  if(r.p&&cat){const ms=all.match(/suggested nominal training duration[^0-9]{0,30}([\d,]+)\s*(?:hours?|hrs?\.?)/i);
+   if(ms){D.chrs=D.chrs||{};if(D.chrs[cat]==null)D.chrs[cat]=+ms[1].replace(/,/g,'');}}
+  const val=r.length>1?cl(r.slice(1).map(T).join(' ')):(f.includes(':')?cl(f.slice(f.indexOf(':')+1)):'');
+  // ---- Section 3.1 Course Design: Nominal Training Duration (Basic / Common / Core / total / SIL)
+  if(r.p&&/^nominal training duration/i.test(f)&&dtxt===null){dtxt='';dn=0;}
+  if(dtxt!==null){
+   if(/^course description/i.test(f)||!r.p||++dn>12){
+    const rx=/(\d[\d,]*)\s*(?:hrs?\.?|hours?)([^0-9]*)/gi;let m,tot=0;const H={};
+    while((m=rx.exec(dtxt))){const n=+m[1].replace(/,/g,''),t=m[2];
+     const k=/basic/i.test(t)?'basic':/common/i.test(t)?'common':/core/i.test(t)?'core':'';
+     if(k)H[k]=n;else if(/supervised|\bSIL\b/i.test(t))D.sil=n;else if(!tot)tot=n;}
+    if(Object.keys(H).length)D.chrs=H;
+    D.dur=tot||((H.basic||0)+(H.common||0)+(H.core||0))||D.dur;dtxt=null;
+   }else{dtxt+=' '+all;continue;}}
+  // ---- Part 5 sources: training delivery, tools/equipment/materials, facilities, trainer, institutional assessment
+  if(r.p){const hd=f.toLowerCase().replace(/[:.\s]+$/,'');
+   const k=hd=='training delivery'?'del':hd=='list of tools, equipment and materials'?'tools':hd=='training facilities'?'fac':/^trainer.?s qualifications?$/.test(hd)?'trainer':hd=='institutional assessment'?'inst':(/^section 4\b/.test(hd)||hd=='trainee entry requirements')?'':null;
+   if(k!==null){s5=k;
+    if(k){ent=false;ev='';cols=c3=cur=null;
+     if(k=='del')D.del=[];if(k=='tools')D.tools={intro:[],cats:[],note:[]};if(k=='fac')D.fac={intro:'',head:[],rows:[]};if(k=='trainer')D.trainer=[];if(k=='inst')D.inst='';
+     continue;}}}
+  if(s5){const junk=/promulgated|^page \d+$/i;
+   if(r.p){const ls=r[0].filter(l=>!junk.test(l.s)),t=cl(ls.map(l=>l.s).join(' '));if(!t)continue;
+    if(s5=='del')D.del.push(...ls);
+    else if(s5=='tools')(D.tools.cats.length?D.tools.note:D.tools.intro).push(t);
+    else if(s5=='fac')D.fac.intro=(D.fac.intro?D.fac.intro+' ':'')+t;
+    else if(s5=='trainer')D.trainer.push(...ls);
+    else if(s5=='inst')D.inst=(D.inst?D.inst+' ':'')+t;
+    continue;}
+   if(s5=='tools'){const a=cl(T(r[0])),b=cl(r.slice(1).map(T).join(' '));
+    if(!a&&!b)continue;if(/^qty\.?$/i.test(a))continue;
+    if(a&&!b&&!/^\d/.test(a)&&a==a.toUpperCase()){D.tools.cats.push({c:fixCat(a),items:[]});continue;}
+    if(!D.tools.cats.length)D.tools.cats.push({c:'Tools, Equipment and Materials',items:[]});
+    if(b)D.tools.cats[D.tools.cats.length-1].items.push({q:a,n:b});
+    continue;}
+   if(s5=='fac'){const c=r.map(x=>cl(T(x)));if(c.every(x=>!x))continue;
+    if(h.some(s=>/space requirement/.test(s)))D.fac.head=c;else D.fac.rows.push(c);
+    continue;}
+   if(s5)continue;}
+  // headers of tables
+  if(h.some(s=>/^element/.test(s))&&h.some(s=>/performance criteri/.test(s))){ent=false;
+   cols={el:h.findIndex(s=>/^element/.test(s)),pc:h.findIndex(s=>/performance/.test(s)),rk:h.findIndex(s=>/knowledge/.test(s)),rs:h.findIndex(s=>/skill/.test(s))};cur=null;continue;}
+  if(h.some(s=>/learning outcome/.test(s))&&h.some(s=>/methodolog/.test(s))){ent=false;
+   c3={u:h.findIndex(s=>/unit|competenc|module/.test(s)),lo:h.findIndex(s=>/learning outcome/.test(s)),m:h.findIndex(s=>/methodolog/.test(s)),h:h.findIndex(s=>/hour|duration/.test(s))};continue;}
+  // a unit descriptor that wraps onto the next paragraph ("...attitudes and values" / "needed to ...")
+  if(dc&&uc){dc=0;if(r.p&&r.length==1&&!/^(element|range|evidence|unit|variable|section)/i.test(f)&&!/[.:]\s*$/.test(uc.desc)){uc.desc=cl(uc.desc+' '+all);continue;}}
+  if(pend&&uc){uc.desc=all;pend='';continue;}
+  // element rows
+  if(cols&&uc&&!r.p){const e=T(r[cols.el]);
+   if(e){cur={title:strip(e),pc:[],rk:[],rs:[]};uc.els.push(cur);}
+   if(cur){add(cur.pc,r[cols.pc]);add(cur.rk,r[cols.rk]);add(cur.rs,r[cols.rs]);}continue;}
+  // section 3 rows
+  if(c3&&!r.p){if(r.filter(c=>c.length).length<2)continue;
+   const u=T(r[c3.u]),lo=T(r[c3.lo]),hv=c3.h>=0?T(r[c3.h]).match(/\d+(\.\d+)?/):null;
+   if(u)cu=u;if(lo||hv)D.s3.push({u:cu,lo:strip(lo),m:[],h:hv?+hv[0]:0});
+   const last=D.s3[D.s3.length-1];if(last)add(last.m,r[c3.m]);continue;}
+  // category heading
+  if(r.length==1&&f.length<70&&/^(basic|common|core)\s+competenc/i.test(f)){cat=f.split(/\s/)[0].toLowerCase();continue;}
+  // unit fields
+  if(/^unit (of competency|title)\b/i.test(f)&&val&&!/^module/i.test(val)){ent=false;ev='';
+   const ttl=strip(noCode(val));if(!ttl)continue;
+   uc=D.ucs.find(u=>nm(u.title)==nm(ttl));
+   if(!uc){uc={cat:cat||'basic',title:ttl,code:'',hrs:0,desc:'',els:[],res:[],met:[]};D.ucs.push(uc);}
+   const mc=val.match(/UNIT CODE\s*:?\s*([A-Za-z0-9]+)/i);if(mc&&!uc.code)uc.code=mc[1];continue;}
+  if(uc&&/^unit code\b/i.test(f)){uc.code=val.replace(/^[:\s]+/,'');continue;}
+  if(uc&&/^unit descriptor\b/i.test(f)){if(val){uc.desc=val;dc=1}else pend=1;continue;}
+  // evidence guide
+  if(uc&&/^(variable|range|section)/i.test(f)&&f.length<40)ev='';
+  if(uc){const addEv=a=>{const t=ev=='res'?uc.res:uc.met;add(t,a.filter(l=>!lead.test(l.s)))};
+   if(f.length<70&&lab.test(f)){ev=/resource/i.test(f)?'res':(/method/i.test(f)&&!/context/i.test(f)?'met':'');
+    if(ev)addEv([...r[0].slice(1),...r.slice(1).flat()]);continue;}
+   if(ev){addEv(r.flat());continue;}}
+  // entry requirements
+  if(f.length<60&&/trainee entry requirements/i.test(f)){ent=true;add(D.entry,[...r[0].slice(1),...r.slice(1).flat()].filter(l=>!lead.test(l.s)));continue;}
+  if(ent){if(/^(list of tools|tools|trainers?|institutional|training facilities|assessment|course delivery|section|nominal|unit of)/i.test(f)&&f.length<80)ent=false;
+   else{add(D.entry,r.flat().filter(l=>!lead.test(l.s)));continue;}}
+  // cover info
+  if(r.p){
+   if(!D.sector){const m=f.match(/^sector\s*[:\-–]\s*(.+)/i)||f.match(/^([A-Z][A-Z ,&\/]{2,60}) SECTOR$/);if(m)D.sector=cl(m[1]);}
+   if(!D.qual&&/\bNC\s*(I{1,3}|IV)\b/.test(f)&&f.length<120&&!/^(the|this)\b/i.test(f))D.qual=f.replace(/^qualification\s*[:\-–]?\s*/i,'');
+   if(!D.desc&&f.length>80&&/qualification/i.test(f)&&/(consists of|covers|aims|is for)/i.test(f))D.desc=f;}
+  if(!D.dur){const m=all.match(/nominal training duration[^0-9]{0,60}([\d,]+)\s*(?:hours?|hrs?\.?)/i);if(m)D.dur=+m[1].replace(/,/g,'');}
+ }
+
+ if(!D.dur&&D.chrs)D.dur=Object.values(D.chrs).reduce((a,x)=>a+x,0);
+ return D;}
+
+// ---------- generators ----------
+const DBL=['plan','run','put','set','get','cut','stop','prep','ship','wrap','drop','chop','begin'];
+function g(w){const l=w.toLowerCase();let r;
+ if(DBL.includes(l))r=l+l.slice(-1)+'ing';
+ else if(/ie$/.test(l))r=l.slice(0,-2)+'ying';
+ else if(/[^eyo]e$/.test(l))r=l.slice(0,-1)+'ing';else r=l+'ing';
+ return w[0]==w[0].toUpperCase()?r[0].toUpperCase()+r.slice(1):r;}
+function ing(t){const m=t.match(/^([A-Za-z]+(?:\/[A-Za-z]+)*)([\s\S]*)$/);if(!m)return t;return m[1].split('/').map(g).join('/')+m[2];}
+// one casing style for all unit / module titles: Sentence case (acronyms kept)
+const ACR=['OSH','TVET','ICT','SIL','HACCP','NC','II','III','IV'];
+const cap=t=>{t=cl(t).toLowerCase().replace(/\b[a-z]+\b/g,w=>ACR.includes(w.toUpperCase())?w.toUpperCase():w);return t.charAt(0).toUpperCase()+t.slice(1);};
+const VB='update|maintain|present|prepare|produce|store|operate|monitor|implement|evaluate|inspect|repair|install|assemble|apply';
+// module title: "Verb-ing ..." — also puts a second verb after "and" in -ing form (Preparing and presenting ...)
+const M=t=>cap(ing(cap(t))).replace(new RegExp('\\band ('+VB+')\\b','g'),(m,v)=>'and '+g(v));
+const U=t=>cap(t);
+const hrs=n=>n+' hour'+(n==1?'':'s');
+const h=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function ul(a){if(!a.length)return 'n/a';let o='',d=0;
+ a.forEach((l,i)=>{const x=i?Math.min(l.d,d+1):0;
+  if(!i)o='<ul><li>'+h(l.s);
+  else if(x>d){o+='<ul><li>'+h(l.s);d=x}
+  else{while(d>x){o+='</li></ul>';d--}o+='</li><li>'+h(l.s)}});
+ return o+'</li></ul>'.repeat(d+1);}
+const ol=a=>a.length?'<ol>'+a.map(l=>`<li>${h(l.s)}</li>`).join('')+'</ol>':'n/a';
+const CATS=[['basic','Basic Competencies'],['common','Common Competencies'],['core','Core Competencies']];
+const wset=s=>new Set((s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(w=>w.length>2&&!['and','the','for'].includes(w)).map(w=>w.replace(/([^s])s$/,'$1')));
+const sim=(a,b)=>{const A=wset(a),B=wset(b);let n=0;A.forEach(w=>B.has(w)&&n++);return n/Math.max(A.size,B.size,1)};
+// Section 2 and Section 3 sometimes word a unit title slightly differently ("equipment and tools" vs "tools and equipment")
+const s3of=u=>{const hit=D.s3.filter(x=>nm(x.u)&&(nm(x.u).includes(nm(u.title))||nm(u.title).includes(nm(x.u))));
+ return hit.length?hit:D.s3.filter(x=>nm(x.u)&&sim(x.u,u.title)>=0.7);};
+const s3h=u=>s3of(u).reduce((a,x)=>a+x.h,0);
+// the TR may give hours only per category (Basic / Common / Core): then share them evenly among that category's units
+const share=u=>{const a=D.ucs.filter(x=>x.cat==u.cat),n=a.length,t=D.chrs&&D.chrs[u.cat];if(!t||!n)return 0;const b=Math.floor(t/n);return b+(a.indexOf(u)<t-b*n?1:0);};
+const dur=u=>+u.hrs>0?+u.hrs:(s3h(u)||share(u));
+const even=u=>!(+u.hrs>0)&&!s3h(u)&&share(u)>0;
+const inCat=c=>D.ucs.filter(u=>u.cat==c);
+const catHrs=c=>D.chrs&&D.chrs[c]!=null?D.chrs[c]:inCat(c).reduce((a,u)=>a+dur(u),0);
+const s3Hrs=c=>inCat(c).reduce((a,u)=>a+dur(u),0);
+const hrsWarn=()=>{const w=[];
+ CATS.forEach(([c,t])=>{if(inCat(c).some(even))w.push(`${t}: the TR gives ${D.chrs[c]} hours for the whole category but no hours per unit, so the hours were divided evenly among its units. To change them, set "hrs" of each unit in the JSON and generate the part again`)});CATS.forEach(([c,t])=>{if(D.chrs&&D.chrs[c]!=null){const x=s3Hrs(c);if(x&&x!=D.chrs[c])w.push(`${t}: Section 3.1 says ${D.chrs[c]} hours, but the unit hours in Section 3 add up to ${x}`)}});return w;};
+const kv=(k,v)=>`<tr><th style="width:28%">${k}</th><td>${v}</td></tr>`;
+
+function warn(cats){const w=[];
+ for(const u of D.ucs.filter(u=>cats.includes(u.cat))){const e3=s3of(u);
+  if(!u.desc)w.push(`${u.title}: no unit descriptor found`);
+  if(!u.els.length)w.push(`${u.title}: no elements parsed`);
+  if(!u.res.length)w.push(`${u.title}: no Resource Implications found`);
+  if(!u.met.length)w.push(`${u.title}: no Methods of Assessment found`);
+  if(!e3.length)w.push(`${u.title}: no matching row in Section 3 (hours/methodology)`);
+  else if(e3.length!=u.els.length)w.push(`${u.title}: ${u.els.length} elements (Section 2) vs ${e3.length} learning outcomes (Section 3); all methodologies of the unit were placed under every LO`);
+  u.els.forEach((e,i)=>{if(!e.pc.length)w.push(`${u.title}, LO${i+1}: no performance criteria found`);
+   if(!e.rk.length&&!e.rs.length)w.push(`${u.title}, LO${i+1}: no required knowledge/skills found`);});}
+ return w;}
+const notes=w=>`<h5 class="mt-4">Notes</h5>`+(w.length?'<ul>'+w.map(x=>`<li>${h(x)}</li>`).join('')+'</ul>':'None');
+
+function gen(p){const Q=D.qual||'n/a';
+ if(p==1)return `<h4>Part 1</h4><table class="table">${kv('Sector',h(D.sector||'n/a'))}${kv('Qualification',h(Q))}</table>`;
+ if(p==2)return '<h4>Part 2: Table of Contents</h4>'+CATS.map(([c,t])=>{const a=inCat(c);
+  return `<h5 class="mt-3">${t}</h5>`+(a.length?'<ol>'+a.map(u=>`<li>${h(M(u.title))}</li>`).join('')+'</ol>':'n/a');}).join('');
+ if(p==3){const tot=D.ucs.reduce((a,u)=>a+dur(u),0),x=c=>catHrs(c)||'n/a';
+  const w=hrsWarn();if(!D.chrs&&D.dur&&D.dur!=tot)w.push(`Section 3 hours add up to ${tot}, which does not match the nominal training duration (${D.dur})`);
+  return `<h4>Part 3: Course Design</h4><table class="table">${kv('Course Title',h(Q))}${kv('Training Duration',(D.dur||tot)+' hours')}</table>
+  <table class="table"><tr><th>Competencies</th><th class="c" style="width:25%">Hours</th></tr>
+  <tr><td>Basic Competencies</td><td class="c">${x('basic')}</td></tr><tr><td>Common Competencies</td><td class="c">${x('common')}</td></tr><tr><td>Core Competencies</td><td class="c">${x('core')}</td></tr>
+  <tr><td>Elective</td><td class="c">n/a</td></tr><tr><td>Supervised Industry Learning (SIL)</td><td class="c">${D.sil||'n/a'}</td></tr><tr><th>TOTAL</th><th class="c">${D.dur||tot}</th></tr></table>
+  <table class="table">${kv('Course Description',h(D.desc||'n/a'))}${kv('Trainee Entry Requirements','Trainees or students wishing to gain entry into this program must possess the following requirements:'+ul(D.entry))}</table>`+(w.length?notes(w):'');}
+ if(p==4){let o='<h4>Part 4: Course Structure</h4>';
+  for(const [c,t] of CATS){const a=inCat(c);o+=`<h5 class="mt-3">${t} (${a.length?catHrs(c)+' hours':'n/a'})</h5>`;
+   if(!a.length){o+='n/a';continue;}
+   o+='<table class="table"><tr><th>Units of Competency</th><th>Module Title</th><th>Learning Outcomes</th><th>Nominal Duration</th></tr>';
+   a.forEach((u,i)=>{const n=i+1,E=u.els.length?u.els:[{title:'n/a'}],r=E.length;
+    E.forEach((e,k)=>{o+='<tr>'+(k?'':`<td rowspan="${r}">${n}. ${h(U(u.title))}</td><td rowspan="${r}">${n}.1 ${h(M(u.title))}</td>`)+`<td>${n}.1.${k+1} ${h(e.title)}</td>`+(k?'':`<td rowspan="${r}">${hrs(dur(u))}</td>`)+'</tr>';});});
+   o+='</table>';}
+  return o+notes(warn(['basic','common','core']).concat(hrsWarn()));}
+ if(p==5){const tl=D.tools||{intro:[],cats:[],note:[]},fc=D.fac||{intro:'',head:[],rows:[]},tr=D.trainer||[],ia=D.inst||'';
+  let o='<h4>Part 5: Resources and Delivery</h4>';
+  // Training Delivery always lists just these two items
+  o+=`<h5 class="mt-3">Training Delivery</h5><ol><li>Institution based training</li><li>Learning Modality</li></ol>`;
+  o+=`<h5 class="mt-4">Tools, Equipment and Materials</h5>`+(tl.intro||[]).map(t=>`<p>${h(t)}</p>`).join('');
+  o+=(tl.cats.length?tl.cats.map(c=>{const q=c.items.some(i=>i.q);
+   return `<table class="table"><tr><th${q?' colspan="2"':''}>${h(c.c)}</th></tr>`+(q?'<tr><th style="width:24%">Qty</th><th>Item</th></tr>':'')+c.items.map(i=>`<tr>${q?`<td>${h(i.q)}</td>`:''}<td>${h(i.n)}</td></tr>`).join('')+'</table>';}).join(''):'n/a');
+  o+=(tl.note||[]).map(t=>`<p>${h(t)}</p>`).join('');
+  o+=`<h5 class="mt-4">Training Facilities</h5>`+(fc.intro?`<p>${h(fc.intro)}</p>`:'');
+  o+=fc.rows.length?'<table class="table">'+(fc.head.length?'<tr>'+fc.head.map(x=>`<th>${h(x)}</th>`).join('')+'</tr>':'')+fc.rows.map((r,i,A)=>{const last=i==A.length-1&&/total/i.test(r[0]||'');return '<tr>'+r.map(x=>last?`<th>${h(x)}</th>`:`<td>${h(x)}</td>`).join('')+'</tr>';}).join('')+'</table>':'n/a';
+  o+=`<h5 class="mt-4">Trainer’s Qualifications</h5>${ul(tr)}`;
+  o+=`<h5 class="mt-4">Institutional Assessment</h5>${ia?`<p>${h(ia)}</p>`:'n/a'}`;
+  const w=[];
+  if(!tl.cats.length)w.push('Tools, Equipment and Materials: nothing was parsed');
+  if(!fc.rows.length)w.push('Training Facilities: no rows were parsed');
+  if(!tr.length)w.push('Trainer’s Qualifications: nothing was parsed');
+  if(!ia)w.push('Institutional Assessment: nothing was parsed');
+  return o+notes(w);}
+ const c=['basic','common','core'][p-6],T0=['BASIC','COMMON','CORE'][p-6],a=inCat(c);
+ if(!a.length)return `<h4>Part ${p}</h4>n/a`;
+ let o='';
+ a.forEach((u,ui)=>{const e3=s3of(u),one=e3.length==u.els.length;
+  o+=`<div class="${ui?'pb':''}"><div class="c mb-3"><b>Part ${p}<br>MODULES OF INSTRUCTION<br>${T0} COMPETENCIES<br>${h(D.qual||'n/a')}</b></div>
+  <table class="table">${kv('UNIT OF COMPETENCY',h(U(u.title)))}${kv('MODULE TITLE',h(M(u.title)))}${kv('MODULE DESCRIPTOR',h(u.desc||'n/a'))}${kv('NOMINAL DURATION',hrs(dur(u)))}</table>
+  <table class="table"><tr><th>SUMMARY OF LEARNING OUTCOMES</th></tr><tr><td>Upon completion of this module the students/ trainees will be able to:<br>${u.els.map((e,i)=>`LO${i+1}. ${h(e.title)}`).join('<br>')}</td></tr></table>`;
+  u.els.forEach((e,i)=>{const m=[];(one?e3[i].m:e3.flatMap(x=>x.m)).forEach(l=>{if(!m.some(x=>x.s==l.s))m.push(l)});
+   o+=`<table class="table"><tr><th colspan="2">LO${i+1}. ${h(e.title)}</th></tr>
+   <tr><th style="width:28%">ASSESSMENT CRITERIA</th><td>${ol(e.pc)}</td></tr>
+   <tr><th>CONTENTS</th><td><b>Required Knowledge</b>${ul(e.rk)}<b>Required Skills</b>${ul(e.rs)}</td></tr>
+   <tr><th>CONDITIONS</th><td>The students/ trainees must be provided with the following:${ul(u.res)}</td></tr>
+   <tr><th>METHODOLOGIES</th><td>${ul(m)}</td></tr>
+   <tr><th>ASSESSMENT METHODS</th><td>${ul(u.met)}</td></tr></table>`;});
+  o+='</div>';});
+ return o+notes(warn([c]));}
+
+// ---------- UI ----------
+const PARTS=[[1,'Part 1','Sector and qualification'],[2,'Part 2','Table of contents'],[3,'Part 3','Course design'],[4,'Part 4','Course structure'],[5,'Part 5','Resources and delivery'],[6,'Part 6','Basic competencies'],[7,'Part 7','Common competencies'],[8,'Part 8','Core competencies']];
+let curN=null;
+$('b').innerHTML=PARTS.map(([n,a,b])=>`<button type="button" class="pt" data-n="${n}" disabled><b>${a}</b><span>${b}</span></button>`).join('')+'<button type="button" class="pt all" data-n="0" disabled><b>Parts 1–5</b><span>Generate the front matter in one go</span></button>';
+$('b').onclick=e=>{const t=e.target.closest('.pt');if(t&&!t.disabled)run(+t.dataset.n)};
+document.querySelectorAll('[data-act]').forEach(x=>x.onclick=()=>x.dataset.act=='dw'?dw():window.print());
+const setBusy=on=>{document.querySelectorAll('.pt').forEach(x=>x.disabled=on)};
+function msg(t,k){const m=$('msg');m.className='msg show '+(k||'info');m.textContent=t}
+function clearMsg(){$('msg').className='msg'}
+async function load(file){
+ if(!file)return;clearMsg();$('fname').textContent=file.name;
+ if(!/\.docx$/i.test(file.name)){return msg('That file is not a .docx. Save the Training Regulation as a Word document (.docx) and try again.','err')}
+ if(typeof mammoth=='undefined'){return msg('The Word reader could not be loaded. Check your internet connection and reload the page.','err')}
+ msg('Reading the file…');setBusy(true);
+ try{const r=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});D=parse(rowsOf(r.value));
+  $('j').value=JSON.stringify(D,null,1);clearMsg();status();setBusy(false);$('hint2').textContent='Pick a part. It opens in the preview and can be downloaded or printed.';
+ }catch(x){msg('Could not read this file: '+x.message,'err')}}
+$('f').onchange=e=>load(e.target.files[0]);
+const dz=$('drop');['dragenter','dragover'].forEach(v=>dz.addEventListener(v,e=>{e.preventDefault();dz.classList.add('drag')}));
+['dragleave','drop'].forEach(v=>dz.addEventListener(v,e=>{e.preventDefault();dz.classList.remove('drag')}));
+dz.addEventListener('drop',e=>load(e.dataTransfer.files[0]));
+function status(){const n=D.ucs.length,els=D.ucs.reduce((a,u)=>a+u.els.length,0),tc=(D.tools&&D.tools.cats)||[],ti=tc.reduce((a,c)=>a+c.items.length,0);
+ const t=(l,v,s,w)=>`<div class="tile${w?' wide':''}"><small>${l}</small><b>${h(v)}${s?` <span class="sub">${h(s)}</span>`:''}</b></div>`;
+ $('st').innerHTML=t('Qualification',D.qual||'Not found','',1)+t('Sector',D.sector||'Not found','',1)+t('Nominal duration',D.dur?D.dur+' hours':'Not found')
+  +t('Units of competency',String(n),`Basic ${inCat('basic').length} · Common ${inCat('common').length} · Core ${inCat('core').length}`)
+  
+  +`<div class="tile wide"><small>Parsed from the TR</small><b class="sub">Elements ${els} · Section 3 rows ${D.s3.length} · Tools ${ti} · Facility rows ${((D.fac&&D.fac.rows)||[]).length} · Trainer reqs ${(D.trainer||[]).length}</b></div>`;}
+function wrapTables(root){root.querySelectorAll('table').forEach(t=>{const w=document.createElement('div');w.className='tw';
+ let mx=0;t.querySelectorAll('tr').forEach(r=>mx=Math.max(mx,r.children.length));if(mx>=4)w.classList.add('wide');
+ t.parentNode.insertBefore(w,t);w.appendChild(t)})}
+function run(n){let J;try{J=JSON.parse($('j').value)}catch(x){return msg('Upload a Training Regulation first, or fix the JSON (it is not valid).','err')}
+ if(!J||!J.ucs)return msg('Upload a Training Regulation (.docx) first.','err');
+ D=J;clearMsg();status();curN=n;$('ttl').textContent=n?'Part '+n:'Parts 1–5';
+ try{$('doc').innerHTML=(n?[n]:[1,2,3,4,5]).map((p,i)=>`<section class="${i?'pb':''}">${gen(p)}</section>`).join('');}
+ catch(x){return msg('Could not build this part from the current data: '+x.message,'err')}
+ wrapTables($('doc'));
+ document.querySelectorAll('.pt').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+ document.querySelectorAll('[data-act]').forEach(b=>b.disabled=false);
+ // side by side on wide screens: the preview is already in view, so only scroll when the panels are stacked
+ if(matchMedia('(max-width:980px)').matches)$('doc').scrollIntoView({behavior:'smooth',block:'start'});
+ else $('right').scrollTo({top:0,behavior:'smooth'});}
+function dw(){const c=$('doc').cloneNode(true);c.querySelectorAll('.tw').forEach(w=>w.replaceWith(...w.childNodes));
+ const st='<style>body{font-family:Times New Roman;font-size:11pt}table{border-collapse:collapse;width:100%;margin-bottom:10px}td,th{border:1px solid #000;padding:4px;vertical-align:top}th{background:#e9ecef;text-align:left}.pb{page-break-before:always}.c{text-align:center}</style>';
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['<html xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8">'+st+'</head><body>'+c.innerHTML+'</body></html>'],{type:'application/msword'}));
+ a.download=curN?`cbc-part-${curN}.doc`:'cbc-parts-1-5.doc';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
+// theme
+(function(){const root=document.documentElement;let t;try{t=localStorage.getItem('cbc-theme')}catch(e){}
+ if(!t)t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';root.setAttribute('data-bs-theme',t);
+ $('theme').onclick=()=>{t=root.getAttribute('data-bs-theme')=='dark'?'light':'dark';root.setAttribute('data-bs-theme',t);try{localStorage.setItem('cbc-theme',t)}catch(e){}};})();
+</script></body></html>
