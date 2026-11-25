@@ -100,8 +100,8 @@ details.adv textarea{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,m
 <main class="layout">
  <aside class="side noprint">
   <section class="panel" aria-labelledby="h1">
-   <h2 id="h1">1. Upload the Training Regulation</h2>
-   <p class="hint">Choose the TR as a Word file (.docx). It is read in your browser and nothing is uploaded anywhere.</p>
+   <h2 id="h1">1. Upload the TR or CS</h2>
+   <p class="hint">Choose the TR (or the CS) as a Word file (.docx). It is read in your browser and nothing is uploaded anywhere.</p>
    <label class="drop" id="drop" for="f">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
     <b>Choose a .docx file</b><span>or drag and drop it here</span><div class="file" id="fname"></div>
@@ -115,6 +115,11 @@ details.adv textarea{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,m
    <h2 id="h2">2. Generate a part</h2>
    <p class="hint" id="hint2">Upload a TR first to enable the buttons.</p>
    <div class="parts" id="b"></div>
+  </section>
+  <section class="panel" id="csp" hidden aria-labelledby="h3">
+   <h2 id="h3">3. Fill in what the CS lacks</h2>
+   <p class="hint">A Competency Standard has no hours, methodologies, entry requirements or resources. Enter them here (all optional); they are used when you generate a part.</p>
+   <div id="csf"></div>
   </section>
  </aside>
  <section class="right" id="right">
@@ -244,7 +249,7 @@ function parse(R){
    const ttl=strip(noCode(val));if(!ttl)continue;
    uc=D.ucs.find(u=>nm(u.title)==nm(ttl));
    if(!uc){uc={cat:cat||'basic',title:ttl,code:'',hrs:0,desc:'',els:[],res:[],met:[]};D.ucs.push(uc);}
-   const mc=val.match(/UNIT CODE\s*:?\s*([A-Za-z0-9]+)/i);if(mc&&!uc.code)uc.code=mc[1];continue;}
+   const mc=val.match(/UNIT CODE\s*:?\s*([A-Za-z0-9-]+)/i);if(mc&&!uc.code)uc.code=mc[1];continue;}
   if(uc&&/^unit code\b/i.test(f)){uc.code=val.replace(/^[:\s]+/,'');continue;}
   if(uc&&/^unit descriptor\b/i.test(f)){if(val){uc.desc=val;dc=1}else pend=1;continue;}
   // evidence guide
@@ -260,12 +265,14 @@ function parse(R){
   // cover info
   if(r.p){
    if(!D.sector){const m=f.match(/^sector\s*[:\-–]\s*(.+)/i)||f.match(/^([A-Z][A-Z ,&\/]{2,60}) SECTOR$/);if(m)D.sector=cl(m[1]);}
-   if(!D.qual&&/\bNC\s*(I{1,3}|IV)\b/.test(f)&&f.length<120&&!/^(the|this)\b/i.test(f))D.qual=f.replace(/^qualification\s*[:\-–]?\s*/i,'');
+   if(!D.qual&&/\b(NC|LEVEL)\s*(I{1,3}|IV)\b/i.test(f)&&f.length<120&&!/^(the|this)\b/i.test(f))D.qual=f.replace(/^qualification\s*[:\-–]?\s*/i,'');
+   if(!D.desc&&/^consists of competencies/i.test(f))D.desc='This qualification '+f;
    if(!D.desc&&f.length>80&&/qualification/i.test(f)&&/(consists of|covers|aims|is for)/i.test(f))D.desc=f;}
   if(!D.dur){const m=all.match(/nominal training duration[^0-9]{0,60}([\d,]+)\s*(?:hours?|hrs?\.?)/i);if(m)D.dur=+m[1].replace(/,/g,'');}
  }
 
  if(!D.dur&&D.chrs)D.dur=Object.values(D.chrs).reduce((a,x)=>a+x,0);
+ D.cs=!D.s3.length&&!D.tools.cats.length;
  return D;}
 
 // ---------- generators ----------
@@ -316,7 +323,7 @@ function warn(cats){const w=[];
   if(!u.els.length)w.push(`${u.title}: no elements parsed`);
   if(!u.res.length)w.push(`${u.title}: no Resource Implications found`);
   if(!u.met.length)w.push(`${u.title}: no Methods of Assessment found`);
-  if(!e3.length)w.push(`${u.title}: no matching row in Section 3 (hours/methodology)`);
+  if(!e3.length){if(D.cs){if(!(+u.hrs>0))w.push(`${u.title}: hours not entered`);if(!(u.mm&&u.mm.length))w.push(`${u.title}: methodologies not entered`);}else w.push(`${u.title}: no matching row in Section 3 (hours/methodology)`);}
   else if(e3.length!=u.els.length)w.push(`${u.title}: ${u.els.length} elements (Section 2) vs ${e3.length} learning outcomes (Section 3); all methodologies of the unit were placed under every LO`);
   u.els.forEach((e,i)=>{if(!e.pc.length)w.push(`${u.title}, LO${i+1}: no performance criteria found`);
    if(!e.rk.length&&!e.rs.length)w.push(`${u.title}, LO${i+1}: no required knowledge/skills found`);});}
@@ -367,7 +374,7 @@ function gen(p){const Q=D.qual||'n/a';
   o+=`<div class="${ui?'pb':''}"><div class="c mb-3"><b>Part ${p}<br>MODULES OF INSTRUCTION<br>${T0} COMPETENCIES<br>${h(D.qual||'n/a')}</b></div>
   <table class="table">${kv('UNIT OF COMPETENCY',h(U(u.title)))}${kv('MODULE TITLE',h(M(u.title)))}${kv('MODULE DESCRIPTOR',h(u.desc||'n/a'))}${kv('NOMINAL DURATION',hrs(dur(u)))}</table>
   <table class="table"><tr><th>SUMMARY OF LEARNING OUTCOMES</th></tr><tr><td>Upon completion of this module the students/ trainees will be able to:<br>${u.els.map((e,i)=>`LO${i+1}. ${h(e.title)}`).join('<br>')}</td></tr></table>`;
-  u.els.forEach((e,i)=>{const m=[];(one?e3[i].m:e3.flatMap(x=>x.m)).forEach(l=>{if(!m.some(x=>x.s==l.s))m.push(l)});
+  u.els.forEach((e,i)=>{const m=[];(u.mm&&u.mm.length?u.mm:one?e3[i].m:e3.flatMap(x=>x.m)).forEach(l=>{if(!m.some(x=>x.s==l.s))m.push(l)});
    o+=`<table class="table"><tr><th colspan="2">LO${i+1}. ${h(e.title)}</th></tr>
    <tr><th style="width:28%">ASSESSMENT CRITERIA</th><td>${ol(e.pc)}</td></tr>
    <tr><th>CONTENTS</th><td><b>Required Knowledge</b>${ul(e.rk)}<b>Required Skills</b>${ul(e.rs)}</td></tr>
@@ -392,7 +399,7 @@ async function load(file){
  if(typeof mammoth=='undefined'){return msg('The Word reader could not be loaded. Check your internet connection and reload the page.','err')}
  msg('Reading the file…');setBusy(true);
  try{const r=await mammoth.convertToHtml({arrayBuffer:await file.arrayBuffer()});D=parse(rowsOf(r.value));
-  $('j').value=JSON.stringify(D,null,1);clearMsg();status();setBusy(false);$('hint2').textContent='Pick a part. It opens in the preview and can be downloaded or printed.';
+  $('j').value=JSON.stringify(D,null,1);clearMsg();status();csForm();if(D.cs)msg('This looks like a Competency Standard: no Section 3–5 data was found. Fill in the hours, methodologies and resources in step 3.');setBusy(false);$('hint2').textContent='Pick a part. It opens in the preview and can be downloaded or printed.';
  }catch(x){msg('Could not read this file: '+x.message,'err')}}
 $('f').onchange=e=>load(e.target.files[0]);
 const dz=$('drop');['dragenter','dragover'].forEach(v=>dz.addEventListener(v,e=>{e.preventDefault();dz.classList.add('drag')}));
@@ -404,6 +411,28 @@ function status(){const n=D.ucs.length,els=D.ucs.reduce((a,u)=>a+u.els.length,0)
   +t('Units of competency',String(n),`Basic ${inCat('basic').length} · Common ${inCat('common').length} · Core ${inCat('core').length}`)
   
   +`<div class="tile wide"><small>Parsed from the TR</small><b class="sub">Elements ${els} · Section 3 rows ${D.s3.length} · Tools ${ti} · Facility rows ${((D.fac&&D.fac.rows)||[]).length} · Trainer reqs ${(D.trainer||[]).length}</b></div>`;}
+const toL=t=>t.split('\n').map(x=>x.trim()).filter(Boolean).map(x=>({d:0,s:x}));
+const fromL=a=>(a||[]).map(l=>l.s).join('\n');
+function csForm(){const P=$('csp');P.hidden=!D.cs;if(!D.cs)return;
+ const ta=(id,l,v,r)=>`<label class="form-label small mb-1 mt-2" for="${id}">${l}</label><textarea id="${id}" class="form-control form-control-sm" rows="${r}">${h(v)}</textarea>`;
+ const tl=(D.tools&&D.tools.cats[0]&&D.tools.cats[0].items)||[];
+ $('csf').innerHTML=`<div class="row g-2"><div class="col-6"><label class="form-label small mb-1" for="cs_dur">Nominal duration (hours)</label><input id="cs_dur" type="number" min="0" class="form-control form-control-sm" value="${D.dur||''}"></div>
+ <div class="col-6"><label class="form-label small mb-1" for="cs_sil">SIL hours</label><input id="cs_sil" type="number" min="0" class="form-control form-control-sm" value="${D.sil||''}"></div></div>`
+ +ta('cs_desc','Course description',D.desc||'',4)+ta('cs_entry','Trainee entry requirements (one per line)',fromL(D.entry),3)
+ +ta('cs_tools','Tools, equipment and materials (one per line, as: qty | item)',tl.map(i=>(i.q?i.q+' | ':'')+i.n).join('\n'),4)
+ +ta('cs_tr','Trainer’s qualifications (one per line)',fromL(D.trainer),3)+ta('cs_ia','Institutional assessment',D.inst||'',2)
+ +'<h3 class="h6 mt-3 mb-2">Hours and methodologies per unit</h3>'
+ +D.ucs.map((u,i)=>`<details class="mb-2"><summary class="small">${h(u.title)}${+u.hrs>0?' · '+u.hrs+' h':''}</summary>
+ <label class="form-label small mb-1 mt-2" for="u${i}h">Hours</label><input id="u${i}h" data-u="${i}" data-k="hrs" type="number" min="0" class="form-control form-control-sm" value="${+u.hrs>0?u.hrs:''}">
+ <label class="form-label small mb-1 mt-2" for="u${i}m">Methodologies (one per line)</label><textarea id="u${i}m" data-u="${i}" data-k="mm" class="form-control form-control-sm" rows="3">${h(fromL(u.mm))}</textarea></details>`).join('');}
+$('csf').addEventListener('input',e=>{const t=e.target,v=t.value;if(!D)return;
+ if(t.dataset.u!=null){const u=D.ucs[+t.dataset.u];if(t.dataset.k=='hrs')u.hrs=+v||0;else u.mm=toL(v);}
+ else if(t.id=='cs_dur')D.dur=+v||0;else if(t.id=='cs_sil')D.sil=+v||0;
+ else if(t.id=='cs_desc')D.desc=v.trim();else if(t.id=='cs_entry')D.entry=toL(v);
+ else if(t.id=='cs_tools'){const it=toL(v).map(l=>{const k=l.s.indexOf('|');return k<0?{q:'',n:l.s}:{q:l.s.slice(0,k).trim(),n:l.s.slice(k+1).trim()}});
+  D.tools=D.tools||{intro:[],cats:[],note:[]};D.tools.cats=it.length?[{c:'Tools, Equipment and Materials',items:it}]:[];}
+ else if(t.id=='cs_tr')D.trainer=toL(v);else if(t.id=='cs_ia')D.inst=v.trim();
+ $('j').value=JSON.stringify(D,null,1);});
 function wrapTables(root){root.querySelectorAll('table').forEach(t=>{const w=document.createElement('div');w.className='tw';
  let mx=0;t.querySelectorAll('tr').forEach(r=>mx=Math.max(mx,r.children.length));if(mx>=4)w.classList.add('wide');
  t.parentNode.insertBefore(w,t);w.appendChild(t)})}
