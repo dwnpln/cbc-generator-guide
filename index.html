@@ -88,6 +88,9 @@ details.adv textarea{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,m
  .toolbar-m{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line)}
  .toolbar-m .btn-x{flex:1}
 }
+.foot{flex:none;text-align:center;font-size:.82rem;color:var(--mut);background:var(--card);border-top:1px solid var(--line);padding:10px 16px}
+.foot b{color:var(--ink);font-weight:600}
+@media (max-width:640px){.foot{margin-bottom:64px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 @media print{html,body{height:auto!important;overflow:visible!important;display:block!important}.right{height:auto!important;overflow:visible!important;padding:0!important}body{background:#fff}.noprint,.bar,.toolbar-m,.side{display:none!important}main{padding:0}.wrap{max-width:none;padding:0}.layout{display:block}
  .doc{box-shadow:none;border:0;padding:0;margin:0;border-radius:0;min-height:0}.doc .tw{overflow:visible}.doc .tw.wide table{min-width:0}.pb{page-break-before:always;border:0;margin:0;padding:0}}
@@ -127,6 +130,7 @@ details.adv textarea{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,m
   <article id="doc" class="doc" aria-live="polite"><div class="empty noprint">The generated document will appear here.</div></article>
  </section>
 </main>
+<footer class="foot noprint">Developed by <b>Edwin Pelonio</b>, TESDA Quezon City / TESD Specialist II</footer>
 <div class="toolbar-m noprint"><button class="btn-x primary" type="button" data-act="dw" disabled>Download Word</button><button class="btn-x" type="button" data-act="pr" disabled>Print / PDF</button></div>
 <script>
 
